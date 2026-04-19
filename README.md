@@ -2,7 +2,7 @@
 
 A webcam-based hand-tracking AR toy that lets you shoot elemental effects from your hands.Developed by Exploring through Vibecoding.
 
-🔴 **[Live Demo1](https://clashlex.github.io/power1/)**
+🔴 **[Live Demo1](https://clashlex.github.io/power1/)** <br>
 🔴 **[Live Demo2](https://clashlex.github.io/power1/threejs.html)**
 
 
