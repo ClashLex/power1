@@ -1,8 +1,10 @@
 # ⚡ ELEMENTAL POWERS
 
-A webcam-based hand-tracking AR toy that lets you shoot elemental effects from your hands. Vibe coded with Claude.
+A webcam-based hand-tracking AR toy that lets you shoot elemental effects from your hands.Developed by Exploring through Vibecoding.
 
-🔴 **[Live Demo](https://clashlex.github.io/power1/)**
+🔴 **[Live Demo1](https://clashlex.github.io/power1/)**
+🔴 **[Live Demo2](https://clashlex.github.io/power1/threejs.html)**
+
 
 ## How It Works
 
@@ -34,6 +36,6 @@ Uses **MediaPipe Hands** to track your hands in real time via webcam, then overl
 
 ## Usage
 
-Just open `index.html` in a browser. Allow camera access when prompted. No install needed.
+
 
 > **Requires:** A browser with webcam access and WebGL support (Chrome recommended).
