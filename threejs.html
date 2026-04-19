@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spatial Portal Filters</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #000; font-family: sans-serif; }
+        canvas { display: block; width: 100vw; height: 100vh; }
+        video { display: none; }
+        
+        #ui-container {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 15px 25px;
+            border-radius: 50px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            z-index: 10;
+        }
+
+        button {
+            background: transparent;
+            color: white;
+            border: 2px solid white;
+            padding: 10px 20px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        button:hover, button.active {
+            background: white;
+            color: black;
+        }
+
+        #status {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            background: rgba(0,0,0,0.5);
+            padding: 10px;
+            border-radius: 8px;
+            font-family: monospace;
+            z-index: 10;
+        }
+    </style>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+</head>
+<body>
+
+    <div id="status">Loading Camera and AI Models...</div>
+    <video id="webcam" autoplay playsinline></video>
+    
+    <div id="ui-container">
+        <button class="filter-btn active" data-filter="0">Normal</button>
+        <button class="filter-btn" data-filter="1">Noir</button>
+        <button class="filter-btn" data-filter="2">Neon Wireframe</button>
+        <button class="filter-btn" data-filter="3">Risograph</button>
+    </div>
+
+    <script>
+        // --- 1. SET UP THREE.JS SCENE ---
+        const scene = new THREE.Scene();
+        // Use an Orthographic camera so the webcam feed maps perfectly 1:1 with the screen
+        const aspect = window.innerWidth / window.innerHeight;
+        const camera = new THREE.OrthographicCamera(-aspect, aspect, 1, -1, 0.1, 100);
+        camera.position.z = 1;
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Video Texture Setup
+        const videoElement = document.getElementById('webcam');
+        const videoTexture = new THREE.VideoTexture(videoElement);
+        videoTexture.minFilter = THREE.LinearFilter;
+        videoTexture.magFilter = THREE.LinearFilter;
+        videoTexture.format = THREE.RGBFormat;
+
+        // --- BACKGROUND LAYER (Raw Webcam) ---
+        const bgGeometry = new THREE.PlaneGeometry(aspect * 2, 2);
+        const bgMaterial = new THREE.MeshBasicMaterial({ map: videoTexture });
+        const bgMesh = new THREE.Mesh(bgGeometry, bgMaterial);
+        // Flip horizontally to act like a mirror
+        bgMesh.scale.x = -1; 
+        scene.add(bgMesh);
+
+        // --- FOREGROUND PORTAL LAYER (Custom Shaders) ---
+        // The vertex shader aligns the texture of the moving plane with the background behind it
+        const vertexShader = `
+            varying vec2 vUv;
+            varying vec2 vScreenSpace;
+            void main() {
+                vUv = uv;
+                // Calculate where this vertex is on the screen to sample the background texture correctly
+                vec4 screenPos = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                vScreenSpace = (screenPos.xy / screenPos.w) * 0.5 + 0.5;
+                gl_Position = screenPos;
+            }
+        `;
+
+        const fragmentShader = `
+            uniform sampler2D tDiffuse;
+            uniform int uFilter;
+            varying vec2 vScreenSpace;
+
+            void main() {
+                // Read from the video texture based on screen position, not local plane UV
+                // Flip the X coordinate because the camera is mirrored
+                vec2 samplePos = vec2(1.0 - vScreenSpace.x, vScreenSpace.y);
+                vec4 color = texture2D(tDiffuse, samplePos);
+
+                if (uFilter == 1) { 
+                    // NOIR: High contrast grayscale
+                    float gray = dot(color.rgb, vec3(0.299, 0.587, 0.114));
+                    color = vec4(vec3(gray) * 1.5 - 0.2, 1.0); 
+                } 
+                else if (uFilter == 2) { 
+                    // NEON WIREFRAME: Simple edge detection (Sobel)
+                    vec4 cLeft = texture2D(tDiffuse, samplePos - vec2(0.005, 0.0));
+                    vec4 cRight = texture2D(tDiffuse, samplePos + vec2(0.005, 0.0));
+                    vec4 cTop = texture2D(tDiffuse, samplePos - vec2(0.0, 0.005));
+                    vec4 cBottom = texture2D(tDiffuse, samplePos + vec2(0.0, 0.005));
+                    vec3 edge = abs(cLeft.rgb - cRight.rgb) + abs(cTop.rgb - cBottom.rgb);
+                    color = vec4(edge * vec3(0.0, 1.5, 1.5), 1.0); // Bright cyan
+                } 
+                else if (uFilter == 3) { 
+                    // RISOGRAPH: Posterize colors and add a tint
+                    vec3 posterized = floor(color.rgb * 4.0) / 4.0;
+                    color = vec4(posterized * vec3(1.2, 0.5, 0.8), 1.0); // Pink/Magenta tint
+                }
+
+                // Add a subtle border glow to the portal
+                float borderX = min(vScreenSpace.x, 1.0 - vScreenSpace.x);
+                float borderY = min(vScreenSpace.y, 1.0 - vScreenSpace.y);
+                float border = min(borderX, borderY);
+                if (border < 0.01) {
+                    color.rgb += vec3(0.3); // Brighten edges
+                }
+
+                gl_FragColor = color;
+            }
+        `;
+
+        const fgMaterial = new THREE.ShaderMaterial({
+            uniforms: {
+                tDiffuse: { value: videoTexture },
+                uFilter: { value: 0 }
+            },
+            vertexShader: vertexShader,
+            fragmentShader: fragmentShader,
+            transparent: true
+        });
+
+        // Start with a standard plane size, will be dynamically scaled
+        const fgGeometry = new THREE.PlaneGeometry(1, 1);
+        const portalMesh = new THREE.Mesh(fgGeometry, fgMaterial);
+        // Hide initially until hands are detected
+        portalMesh.visible = false; 
+        scene.add(portalMesh);
+
+        // --- 2. UI LOGIC ---
+        const buttons = document.querySelectorAll('.filter-btn');
+        buttons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                buttons.forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                fgMaterial.uniforms.uFilter.value = parseInt(e.target.getAttribute('data-filter'));
+            });
+        });
+
+        // --- 3. HAND TRACKING LOGIC ---
+        const statusEl = document.getElementById('status');
+
+        function onResults(results) {
+            statusEl.innerText = "Tracking Active. Show your hands!";
+            
+            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                portalMesh.visible = true;
+
+                let leftPoint, rightPoint;
+
+                if (results.multiHandLandmarks.length === 2) {
+                    // Two hands detected: Use index fingers of both hands
+                    statusEl.innerText = "Portal Active (2 Hands)";
+                    leftPoint = results.multiHandLandmarks[0][8]; // 8 is the index fingertip
+                    rightPoint = results.multiHandLandmarks[1][8];
+                } else {
+                    // One hand detected: Use thumb and index finger to create a mini portal
+                    statusEl.innerText = "Portal Active (1 Hand Pinch)";
+                    leftPoint = results.multiHandLandmarks[0][4]; // 4 is thumb tip
+                    rightPoint = results.multiHandLandmarks[0][8]; // 8 is index tip
+                }
+
+                // MediaPipe coordinates are 0-1 (top-left origin). ThreeJS ortho is centered.
+                // Map MediaPipe coords to Three.js Orthographic space
+                const mapToWorldX = (x) => -(x - 0.5) * (aspect * 2); // Inverted because mirrored
+                const mapToWorldY = (y) => -(y - 0.5) * 2;
+
+                const x1 = mapToWorldX(leftPoint.x);
+                const y1 = mapToWorldY(leftPoint.y);
+                const x2 = mapToWorldX(rightPoint.x);
+                const y2 = mapToWorldY(rightPoint.y);
+
+                // Calculate center point between fingers
+                const centerX = (x1 + x2) / 2;
+                const centerY = (y1 + y2) / 2;
+
+                // Calculate distance to scale the portal
+                const dx = x2 - x1;
+                const dy = y2 - y1;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                // Update portal position and size
+                portalMesh.position.set(centerX, centerY, 0.1);
+                
+                // Keep the portal in a 16:9 ratio, scaling based on finger distance
+                const portalWidth = distance * 1.5; 
+                const portalHeight = portalWidth * (9/16);
+                portalMesh.scale.set(portalWidth, portalHeight, 1);
+
+            } else {
+                portalMesh.visible = false;
+            }
+        }
+
+        const hands = new Hands({locateFile: (file) => {
+            return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
+        }});
+
+        hands.setOptions({
+            maxNumHands: 2,
+            modelComplexity: 1,
+            minDetectionConfidence: 0.6,
+            minTrackingConfidence: 0.6
+        });
+        hands.onResults(onResults);
+
+        // --- 4. START CAMERA & RENDER LOOP ---
+        const cameraUtils = new Camera(videoElement, {
+            onFrame: async () => {
+                await hands.send({image: videoElement});
+                renderer.render(scene, camera);
+            },
+            width: 1280,
+            height: 720
+        });
+
+        cameraUtils.start().then(() => {
+            statusEl.innerText = "Initializing AI Models...";
+        }).catch(err => {
+            statusEl.innerText = "Camera Error: Please allow webcam access.";
+        });
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            const newAspect = window.innerWidth / window.innerHeight;
+            camera.left = -newAspect;
+            camera.right = newAspect;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            bgMesh.geometry.dispose();
+            bgMesh.geometry = new THREE.PlaneGeometry(newAspect * 2, 2);
+        });
+
+    </script>
+</body>
+</html>
