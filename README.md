@@ -32,6 +32,6 @@ Uses **MediaPipe Hands** to track your hands in real time via webcam, then overl
 
 ## Usage
 
-Just open `power_v3.html` in a browser. Allow camera access when prompted. No install needed.
+Just open `index.html` in a browser. Allow camera access when prompted. No install needed.
 
 > **Requires:** A browser with webcam access and WebGL support (Chrome recommended).
