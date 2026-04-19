@@ -2,6 +2,8 @@
 
 A webcam-based hand-tracking AR toy that lets you shoot elemental effects from your hands. Vibe coded with Claude.
 
+🔴 **[Live Demo](https://clashlex.github.io/power1/)**
+
 ## How It Works
 
 Uses **MediaPipe Hands** to track your hands in real time via webcam, then overlays particle effects, lightning bolts, and glows based on your gestures.
