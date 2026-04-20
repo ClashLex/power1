@@ -4,13 +4,13 @@ A collection of webcam-based hand-tracking AR experiments developed by Exploring
 
 🔴 **[Live Demo 1: Elemental Powers](https://clashlex.github.io/power1/)** <br>
 🔴 **[Live Demo 2: 3D Spatial Portal](https://clashlex.github.io/power1/threejs.html)**<br>
-🔴 **[Live Demo 3: 3D Spatial Portal](https://clashlex.github.io/power1/V3.html)**
+🔴 **[Live Demo 3: Spatial Studio](https://clashlex.github.io/power1/V3.html)**
 
 ---
 
 ## 🛠️ How It Works
 
-Both experiments utilize **MediaPipe Hands** to track your hand joints in real-time via your webcam, mapping your physical movements to digital interactions in the browser.
+These experiments utilize **MediaPipe Hands** to track your hand joints in real-time via your webcam, mapping your physical movements to digital interactions in the browser.
 
 ### 🔴 Demo 1: Elemental Powers (2D Canvas)
 Overlays high-performance 2D particle effects, lightning bolts, and glowing auras directly onto your camera feed based on specific gestures.
@@ -57,12 +57,36 @@ Turns your hands into controllers for a floating 3D window. Holding up your fing
 
 ---
 
+### 🔴 Demo 3: Spatial Studio (Advanced WebGL & Capture)
+An evolution of the Spatial Portal featuring a sleek, visionOS-inspired **Glassmorphism UI**, a hands-free capture system, and 8 highly customized GLSL fragment shaders. 
+
+**Gestures & Controls**
+* 🤏 **Pinch:** Create a mini, single-handed portal.
+* 👐 **Both Hands:** Expand a massive portal between your index fingers.
+* 🛑 **Hold Still (Capture):** Keep the portal steady to trigger the HUD focus ring. Once the ring completes, it snaps a spatial photo to your gallery.
+* ✊ **Fist:** Hover a closed fist over a captured photo in your gallery to physically "crush" and delete it.
+
+**Active Shaders / Filters**
+
+| Filter | Effect |
+|:---|:---|
+| **Frosted** | Chromatic aberration with noise-based glass blur. |
+| **Cyber** | Custom dual-tone mapping (Neon Pink & Cyan). |
+| **Thermal HD** | Smooth, high-contrast FLIR (Thermal camera) simulation. |
+| **Night Ops** | Phosphor green with scanlines and dynamic noise grain. |
+| **Sketch** | Real-time Sobel edge detection on a textured paper backdrop. |
+| **Halftone** | Comic-book style dot matrix quantization. |
+| **Refract** | Dynamic, time-based water ripple distortion. |
+| **Vapor** | Sunset gradient mapping with an overlayed retro grid. |
+
+---
+
 ## 💻 Tech Stack
 
 * **Hand Tracking:** Google MediaPipe Hands
 * **Rendering (Demo 1):** HTML5 `<canvas>` API
-* **Rendering (Demo 2):** Three.js (Orthographic Camera, Video Textures) & Custom GLSL Fragment/Vertex Shaders
-* **Styling:** CSS3 (Glassmorphism UI, Blur backdrops)
+* **Rendering (Demos 2 & 3):** Three.js (Orthographic Camera, Video Textures) & Custom GLSL Fragment/Vertex Shaders
+* **Styling:** CSS3 (Modern Glassmorphism UI, Blur backdrops, CSS Animations)
 
 ## 🚀 Usage
 
@@ -70,6 +94,7 @@ Turns your hands into controllers for a floating 3D window. Holding up your fing
 
 To run locally:
 1. Clone the repository.
-2. Because webcam access is blocked on local `file:///` protocols, you must serve the files using a local web server (e.g., VS Code Live Server, Python `http.server`, or Node `http-server`).
+2. Because webcam access is blocked on local `file:///` protocols, you must serve the files using a local web server (e.g., VS Code Live Server, Python `python -m http.server`, or Node `http-server`).
 3. Allow camera permissions when prompted.
-4. 
+4. Navigate to `index.html` (Demo 1), `threejs.html` (Demo 2), or `V3.html` (Demo 3) in your browser to start exploring!
+5. 
