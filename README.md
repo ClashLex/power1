@@ -3,7 +3,8 @@
 A collection of webcam-based hand-tracking AR experiments developed by Exploring through Vibecoding. These projects transform your browser into an interactive canvas, letting you shoot elemental particle effects from your fingertips or manipulate a 3D holographic portal in physical space.
 
 🔴 **[Live Demo 1: Elemental Powers](https://clashlex.github.io/power1/)** <br>
-🔴 **[Live Demo 2: 3D Spatial Portal](https://clashlex.github.io/power1/threejs.html)**
+🔴 **[Live Demo 2: 3D Spatial Portal](https://clashlex.github.io/power1/threejs.html)**<br>
+🔴 **[Live Demo 3: 3D Spatial Portal](https://clashlex.github.io/power1/V3.html)**
 
 ---
 
